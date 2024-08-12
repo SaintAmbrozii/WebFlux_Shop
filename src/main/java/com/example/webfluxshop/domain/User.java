@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
@@ -28,7 +29,8 @@ public class User {
 
     private List<String> roles;
 
-    private Boolean aktive;
+    private Boolean enabled;
 
-    private LocalDateTime created_at;
+    @Column("created_at")
+    private LocalDateTime createdAt;
 }
