@@ -27,12 +27,13 @@ public class BasketService {
     private final OrderDetailRepo orderDetailRepo;
     private final ProductRepo productRepo;
     private final UserRepo userRepo;
+    private final UserService userService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW,rollbackFor = ProductQuantityException.class)
-    public Mono<OrderDetails> create (Long productId,OrderDetails orderDetails, String email) {
+    public Mono<OrderDetails> create (Long productId,OrderDetails orderDetails) {
         Mono<Product> productMono = productRepo.findById(productId)
                 .switchIfEmpty(Mono.error(new NotFoundException("данный товар отсутствует в базе")));
-        Mono<User> userMono = userRepo.findByEmail(email);
+        Mono<User> userMono = userService.getUserInSession();
         return Mono.zip(userMono,productMono).flatMap(tulpe->{
 
             OrderDetails orderDetail = new OrderDetails();
@@ -57,10 +58,10 @@ public class BasketService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW,rollbackFor = ProductQuantityException.class)
-    public Mono<OrderDetails> updateQuantity(Long id, String email, OrderDetails orderDetails) {
+    public Mono<OrderDetails> updateQuantity(Long id, OrderDetails orderDetails) {
 
         Mono<OrderDetails> orderDetailsMono = orderDetailRepo.findById(id);
-        Mono<User> userMono = userRepo.findByEmail(email);
+        Mono<User> userMono = userService.getUserInSession();
         return Mono.zip(orderDetailsMono,userMono).flatMap(tuple->{
             OrderDetails orderDetail = tuple.getT1();
             User user = tuple.getT2();
@@ -91,9 +92,11 @@ public class BasketService {
 
     }
     @Transactional(propagation = Propagation.REQUIRES_NEW,rollbackFor = NotFoundException.class)
-    public Mono<Void> clearAllBasket(String email) {
+    public Mono<Void> clearAllBasket() {
 
-        return userRepo.findByEmail(email).flatMap(user -> {
+        Mono<User> authUser = userService.getUserInSession();
+
+        return authUser.flatMap(user -> {
             Flux<OrderDetails> toUserBasket = orderDetailRepo.findAllByUserId(user.getId());
             toUserBasket.flatMapIterable(orderDetails -> {
                 Mono<Product> product = productRepo.findById(orderDetails.getProductId())

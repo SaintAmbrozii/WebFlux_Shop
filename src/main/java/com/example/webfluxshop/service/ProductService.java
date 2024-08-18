@@ -17,8 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 import reactor.util.function.Tuple2;
 
 import java.nio.file.Path;
@@ -54,8 +56,7 @@ public class ProductService {
  //   }
 
 
-    public Mono<Product> create(@RequestPart(name = "data") Product product,
-                                @RequestPart(required = false, name = "files") Flux<FilePart> files) {
+    public Mono<Product> create(Product product, Flux<FilePart> files) {
 
         return Mono.just(product).flatMap(createProduct -> {
 
@@ -72,7 +73,7 @@ public class ProductService {
         });
     }
 
-    public Mono<Product> updateProduct(@PathVariable(name = "id")Long id,@RequestBody ProductDto productDto) {
+    public Mono<Product> updateProduct(Long id, ProductDto productDto) {
         return productRepo.findById(id).flatMap(product -> {
             product.setCategoryId(productDto.getCategory_id());
             product.setName(productDto.getName());
@@ -84,9 +85,35 @@ public class ProductService {
         });
     }
 
+    public Mono<Product> uploadImages(Long id,Flux<FilePart> fileParts) {
+        Mono<Product> productMono = productRepo.findById(id);
+
+        fileParts.zipWith(productMono).flatMap(filePart -> {
+
+            Product product = filePart.getT2();
+            FilePart file = filePart.getT1();
+            String filename = file.filename();
+
+            String randomName = UUID.randomUUID()
+                    .toString().substring(0, 13);
+
+            String newFileName = randomName+"_"+ filename;
+            String filePath = Paths.get(fileLocation,newFileName).normalize().toAbsolutePath()
+                    .toString();
+
+            Image addImage = Image.builder().name(newFileName).
+                    productId(product.getId()).build();
+           return imageRepo.save(addImage).doOnNext(f->file.transferTo(Path.of(filePath)).subscribe())
+                    .then(Mono.just(addImage));
+        });
+
+        return productMono;
+
+    }
 
 
-    public Mono<Product> findById (@PathVariable(name = "id") Long id) {
+
+    public Mono<Product> findById (Long id) {
         return productRepo.findById(id);
 
     }

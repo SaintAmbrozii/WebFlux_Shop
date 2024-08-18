@@ -2,8 +2,13 @@ package com.example.webfluxshop.service;
 
 
 import com.example.webfluxshop.domain.User;
+import com.example.webfluxshop.exception.UserNotAuthorizedException;
+import com.example.webfluxshop.exception.UserNotFoundException;
 import com.example.webfluxshop.repository.UserRepo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -13,6 +18,11 @@ import reactor.core.publisher.Mono;
 public class UserService {
 
     private final UserRepo userRepo;
+
+
+    public Mono<User> getUserInSession() {
+        return getPrincipalFromSecurityContext();
+    }
 
 
 
@@ -40,6 +50,17 @@ public class UserService {
 
     public Mono<Void> deleteById(Long id) {
        return userRepo.deleteById(id);
+    }
+
+    private Mono<User> getPrincipalFromSecurityContext() {
+        return ReactiveSecurityContextHolder.getContext()
+                .filter(c -> c.getAuthentication() != null)
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new UserNotAuthorizedException("Security context not found"))))
+                .map(SecurityContext::getAuthentication)
+                .map(Authentication::getPrincipal)
+                .cast(String.class)
+                .flatMap(this::findByUsername)
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new UserNotFoundException("User not found"))));
     }
 
 

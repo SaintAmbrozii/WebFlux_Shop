@@ -11,7 +11,9 @@ import com.example.webfluxshop.service.RefreshTokenService;
 import com.example.webfluxshop.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +45,12 @@ public class AuthController {
                 .flatMap(userDetails -> {
                     Mono<String> accessToken = accessTokenService.generateAccessToken(userDetails);
                     Mono<String> refreshToken = refreshTokenService.generateRefreshToken(userDetails);
+                    val authCookie = ResponseCookie.fromClientResponse("X-Auth", String.valueOf(refreshToken))
+                            .maxAge(3600)
+                            .httpOnly(true)
+                            .path("/")
+                            .secure(false) // should be true in production
+                            .build();
                     return Mono.zip(accessToken,refreshToken)
                             .map(tuple->new AuthResponse(tuple.getT1(),tuple.getT2()))
                             .map(ResponseEntity::ok);

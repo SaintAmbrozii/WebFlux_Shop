@@ -21,14 +21,19 @@ public class User {
     @Id
     private Long id;
 
+    @Column("name")
     private String name;
 
+    @Column("email")
     private String email;
 
+    @Column("password")
     private String password;
 
+    @Column("roles")
     private List<String> roles;
 
+    @Column("enabled")
     private Boolean enabled;
 
     @Column("created_at")
