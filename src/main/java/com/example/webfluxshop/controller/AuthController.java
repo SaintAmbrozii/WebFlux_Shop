@@ -8,6 +8,7 @@ import com.example.webfluxshop.payload.RegisterRequest;
 import com.example.webfluxshop.repository.UserRepo;
 import com.example.webfluxshop.service.AccessTokenService;
 import com.example.webfluxshop.service.RefreshTokenService;
+import com.example.webfluxshop.service.UserDetailService;
 import com.example.webfluxshop.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 
 @RestController
@@ -32,6 +34,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final UserRepo userRepo;
     private final UserService userService;
+    private final UserDetailService userDetailService;
 
 
     private final PasswordEncoder encoder;
@@ -41,7 +44,7 @@ public class AuthController {
     public Mono<ResponseEntity<AuthResponse>> login(@RequestBody AuthRequest request) {
 
        return userService.findByUsername(request.getEmail())
-                .filter(user-> accessTokenService.isValidUser(request,user))
+                .filter(user-> accessTokenService.isValidUser(request, user))
                 .flatMap(userDetails -> {
                     Mono<String> accessToken = accessTokenService.generateAccessToken(userDetails);
                     Mono<String> refreshToken = refreshTokenService.generateRefreshToken(userDetails);
@@ -67,7 +70,7 @@ public class AuthController {
         user.setPassword(encoder.encode(request.getPassword()));
         user.setEnabled(true);
         user.setRoles(Collections.singletonList("ROLE_USER"));
-        user.setCreatedAt(LocalDateTime.now());
+        user.setCreatedAt(ZonedDateTime.now());
         userRepo.save(user);
         return Mono.just(ResponseEntity.ok(user));
     }

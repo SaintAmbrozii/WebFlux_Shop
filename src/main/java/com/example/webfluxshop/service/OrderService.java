@@ -16,6 +16,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class OrderService {
             Double totalCosts = orderDetails.stream().mapToDouble(OrderDetails::getCost).sum();
             newOrder.setOrderDetails_ids(order_Ids);
             newOrder.setUserId(user.getId());
-            newOrder.setCreated_at(LocalDateTime.now());
+            newOrder.setCreated_at(ZonedDateTime.now());
             newOrder.setConfirmed(true);
             newOrder.setTotalCosts(totalCosts);
             newOrder.setDescription(order.getDescription());

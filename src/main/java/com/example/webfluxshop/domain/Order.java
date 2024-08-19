@@ -7,6 +7,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +42,7 @@ public class Order {
     private String email;
 
     @Column("created_at")
-    private LocalDateTime created_at;
+    private ZonedDateTime created_at;
 
     @Column("updated")
     private LocalDateTime updated;

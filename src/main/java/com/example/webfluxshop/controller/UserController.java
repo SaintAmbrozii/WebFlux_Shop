@@ -21,9 +21,11 @@ public class UserController {
 
 
     @GetMapping("/profile")
-    public Mono<Authentication> profile() {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(SecurityContext::getAuthentication);
+    public Mono<User> profile() {
+        return userService.getUserInSession();
+
+                //ReactiveSecurityContextHolder.getContext()
+               // .map(SecurityContext::getAuthentication);
     }
 
     @GetMapping

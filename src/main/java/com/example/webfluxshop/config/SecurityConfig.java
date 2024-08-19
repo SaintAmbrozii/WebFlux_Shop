@@ -1,7 +1,6 @@
 package com.example.webfluxshop.config;
 
 import com.example.webfluxshop.security.AuthenticationManager;
-import com.example.webfluxshop.security.JwtServerAuthentificationConverter;
 import com.example.webfluxshop.security.SecurityContextRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;

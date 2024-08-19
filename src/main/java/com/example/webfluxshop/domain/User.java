@@ -9,6 +9,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,5 +38,5 @@ public class User {
     private Boolean enabled;
 
     @Column("created_at")
-    private LocalDateTime createdAt;
+    private ZonedDateTime createdAt;
 }
