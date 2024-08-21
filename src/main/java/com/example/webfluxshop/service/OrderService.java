@@ -32,15 +32,24 @@ public class OrderService {
 
     private final OrderRepo orderRepo;
     private final OrderDetailRepo orderDetailRepo;
-    private final UserRepo userRepo;
-    private final ProductRepo productRepo;
+    private final UserService userService;
+
+
+
+    public Flux<Order> getOrderByUserOwner() {
+        Mono<User> authUser = userService.getUserInSession();
+        return authUser.flatMapMany(user -> {
+            return orderRepo.findAllByUserId(user.getId());
+        });
+    }
 
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Mono<Order> create(Order order, String email) {
+    public Mono<Order> create(Order order) {
 
         Order newOrder = new Order();
-        return userRepo.findByEmail(email).flatMap(user -> {
+        Mono<User> authUser = userService.getUserInSession();
+        return authUser.flatMap(user -> {
             Flux<OrderDetails> orderDetailsFlux = orderDetailRepo.findAllByUserId(user.getId());
             List<OrderDetails> orderDetails = new ArrayList<>();
             orderDetailsFlux.collectList().subscribe(orderDetails::addAll);
@@ -61,10 +70,10 @@ public class OrderService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Mono<Order> update(Long id,Order order,String email) {
+    public Mono<Order> update(Long id,Order order) {
 
         Mono<Order> orderMono = orderRepo.findById(id);
-        Mono<User> userMono = userRepo.findByEmail(email);
+        Mono<User> userMono = userService.getUserInSession();
         return Mono.zip(orderMono,userMono).flatMap(tuple->{
             Order currentOrder = tuple.getT1();
             User authUser = tuple.getT2();

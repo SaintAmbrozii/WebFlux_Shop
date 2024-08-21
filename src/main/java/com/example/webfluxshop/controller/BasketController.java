@@ -7,10 +7,7 @@ import com.example.webfluxshop.service.BasketService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.security.Principal;
@@ -26,14 +23,24 @@ public class BasketController {
         this.basketService = basketService;
     }
 
+    @PostMapping("{id}")
     public Mono<OrderDetails> addToBasket(@PathVariable(name = "id")Long productId,
-                                          @RequestBody OrderDetails orderDetails, Mono<Principal> principal) {
+                                          @RequestBody OrderDetails orderDetails) {
+        return basketService.create(productId, orderDetails);
+    }
 
+    @PatchMapping("{id}")
+    public Mono<OrderDetails> updateQuantity(@PathVariable(name = "id")Long productId,
+                                             @RequestBody OrderDetails orderDetails) {
+        return basketService.updateQuantity(productId, orderDetails);
+    }
+    @DeleteMapping("{id}")
+    public Mono<Void> deleteById(@PathVariable(name = "id")Long productId) {
+        return basketService.deleteOrderDetail(productId);
+    }
 
-
-
-        return null;
-
-
+    @DeleteMapping("clear")
+    public Mono<Void> clearAllBasket() {
+        return basketService.clearAllBasket();
     }
 }
