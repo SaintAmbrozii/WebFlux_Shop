@@ -25,4 +25,8 @@ public class RefreshToken {
     private String token;
     @Column("duration")
     private Date duration;
+
+    private boolean expired = false;
+
+    private boolean revoked = false;
 }

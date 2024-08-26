@@ -47,16 +47,17 @@ public class ProductService {
         return productRepo.findAll();
     }
 
- //   public Mono<Page<Product>> findAllProductsPaged(Pageable pageable) {
- //      Mono<List<Product>> products = productRepo.findAllPageable(pageable.getPageSize(), pageable.getOffset()).collectList();
- //       Mono<Long> totalProductsCount = productRepo.count();
- //       return products.flatMap(productList ->
- //               totalProductsCount.flatMap(totalCount -> Mono.just(new PageImpl<Product>(productList, pageable, totalCount)))
- //       );
- //   }
+
+    public Mono<Page<Product>> findAllProductsPaged(Pageable pageable) {
+        Mono<List<Product>> products = productRepo.findAllPageable(pageable.getPageSize(), pageable.getOffset()).collectList();
+        Mono<Long> totalProductsCount = productRepo.count();
+        return products.flatMap(productList ->
+                totalProductsCount.flatMap(totalCount -> Mono.just(new PageImpl<Product>(productList, pageable, totalCount)))
+        );
+    }
 
 
-    public Mono<Product> create(Product product, Flux<FilePart> files) {
+    public Mono<Product> create(Product product) {
 
         return Mono.just(product).flatMap(createProduct -> {
 
@@ -110,6 +111,8 @@ public class ProductService {
         return productMono;
 
     }
+
+
 
 
 

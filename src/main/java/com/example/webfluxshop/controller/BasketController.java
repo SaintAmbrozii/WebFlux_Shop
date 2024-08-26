@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.security.Principal;
@@ -21,6 +22,11 @@ public class BasketController {
 
     public BasketController(BasketService basketService) {
         this.basketService = basketService;
+    }
+
+    @GetMapping
+    public Flux<OrderDetails> getProductInBasketUserOwner() {
+        return basketService.getProductInBasketByUserOwner();
     }
 
     @PostMapping("{id}")

@@ -33,6 +33,8 @@ public class OrderDetails {
     private Integer count;
     @Column("cost")
     private Double cost;
+    @Column("payed")
+    private Boolean payed;
 
     @Transient
     private Product product;

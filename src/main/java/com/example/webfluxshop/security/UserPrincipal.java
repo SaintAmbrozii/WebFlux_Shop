@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = false)
 public class UserPrincipal implements UserDetails {
 
     private Long id;

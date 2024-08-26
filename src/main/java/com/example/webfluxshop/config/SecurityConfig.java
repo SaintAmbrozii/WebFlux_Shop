@@ -1,6 +1,7 @@
 package com.example.webfluxshop.config;
 
 import com.example.webfluxshop.security.AuthenticationManager;
+import com.example.webfluxshop.security.LogoutHandler;
 import com.example.webfluxshop.security.SecurityContextRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
@@ -32,6 +34,7 @@ public class SecurityConfig {
 
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
+    private final LogoutHandler logoutHandler;
 
 
     private static final List<String> ALLOWED_HEADERS = List.of(
@@ -85,7 +88,18 @@ public class SecurityConfig {
                         .permitAll()
                         .pathMatchers("api/users/**")
                         .hasAuthority("ROLE_USER")
+                        .pathMatchers("api/products/**")
+                        .permitAll()
+                        .pathMatchers("api/category/**")
+                        .permitAll()
+                        .pathMatchers("api/orders/**")
+                        .permitAll()
+                        .pathMatchers("api/basket/**")
+                        .permitAll()
                         .anyExchange().authenticated())
+                .logout(logoutSpec -> logoutSpec.logoutHandler(logoutHandler)
+                        .logoutUrl("api/auth/logout")
+                        .logoutSuccessHandler((exchange, authentication) -> exchange.getExchange().cleanupMultipart()))
 
                 .build();
     }

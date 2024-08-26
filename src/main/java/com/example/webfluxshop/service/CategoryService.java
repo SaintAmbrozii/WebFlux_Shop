@@ -58,8 +58,7 @@ public class CategoryService {
                 newCategory.setDescription(category.getDescription());
 
                 return categoryRepo.save(newCategory)
-                        .doOnNext(savedFile-> file.transferTo(Path.of(filePath))
-                                .subscribe())
+                        .doOnNext(savedFile-> file.transferTo(Path.of(filePath)))
                         .then(Mono.just(newCategory))
                         .switchIfEmpty(Mono.error(new BadResourceLocationException("ошибка пути хранилища")));
 

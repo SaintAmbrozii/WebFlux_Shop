@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface ImageRepo extends R2dbcRepository<Image, Long> {
+public interface ImageRepo extends ReactiveCrudRepository<Image, Long> {
 
    Flux<Image> getAllByProductId(Long id);
 

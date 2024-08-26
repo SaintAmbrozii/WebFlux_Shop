@@ -35,6 +35,9 @@ public class OrderService {
     private final UserService userService;
 
 
+    public Flux<Order> findAll() {
+        return orderRepo.findAll();
+    }
 
     public Flux<Order> getOrderByUserOwner() {
         Mono<User> authUser = userService.getUserInSession();
@@ -44,13 +47,11 @@ public class OrderService {
     }
 
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Mono<Order> create(Order order) {
-
+    public Mono<Order> create() {
         Order newOrder = new Order();
         Mono<User> authUser = userService.getUserInSession();
         return authUser.flatMap(user -> {
-            Flux<OrderDetails> orderDetailsFlux = orderDetailRepo.findAllByUserId(user.getId());
+            Flux<OrderDetails> orderDetailsFlux = orderDetailRepo.findAllByUserIdAndPayedIsFalse(user.getId());
             List<OrderDetails> orderDetails = new ArrayList<>();
             orderDetailsFlux.collectList().subscribe(orderDetails::addAll);
             List<Long> order_Ids = orderDetails.stream().map(OrderDetails::getId).collect(Collectors.toList());
@@ -58,10 +59,7 @@ public class OrderService {
             newOrder.setOrderDetails_ids(order_Ids);
             newOrder.setUserId(user.getId());
             newOrder.setCreated_at(ZonedDateTime.now());
-            newOrder.setConfirmed(true);
             newOrder.setTotalCosts(totalCosts);
-            newOrder.setDescription(order.getDescription());
-            newOrder.setAddress(order.getAddress());
             orderRepo.save(newOrder);
             return Mono.just(newOrder);
 
@@ -69,8 +67,10 @@ public class OrderService {
 
     }
 
+
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Mono<Order> update(Long id,Order order) {
+    public Mono<Order> confirmed(Long id,Order order) {
 
         Mono<Order> orderMono = orderRepo.findById(id);
         Mono<User> userMono = userService.getUserInSession();
@@ -80,7 +80,17 @@ public class OrderService {
             currentOrder.setAddress(order.getAddress());
             currentOrder.setDescription(order.getDescription());
             currentOrder.setUpdated(LocalDateTime.now());
-            return Mono.just(order);
+            Flux<OrderDetails> inBasketDetails = orderDetailRepo.findAllByUserIdAndPayedIsFalse(authUser.getId());
+            inBasketDetails.flatMap(orderDetails -> {
+                OrderDetails confirmedOrderDetail = OrderDetails.builder()
+                        .orderId(currentOrder.getId())
+                        .payed(true).build();
+                return orderDetailRepo.save(confirmedOrderDetail);
+            });
+            currentOrder.setConfirmed(true);
+            currentOrder.setDescription(order.getDescription());
+            currentOrder.setAddress(order.getAddress());
+            return Mono.just(currentOrder);
 
         });
     }
@@ -88,6 +98,8 @@ public class OrderService {
     public Mono<Void> delete(Long id) {
         return orderRepo.deleteById(id);
     }
+
+
 
 
 

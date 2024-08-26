@@ -1,5 +1,6 @@
 package com.example.webfluxshop.service;
 
+import com.example.webfluxshop.domain.Order;
 import com.example.webfluxshop.domain.OrderDetails;
 import com.example.webfluxshop.domain.Product;
 import com.example.webfluxshop.domain.User;
@@ -28,6 +29,13 @@ public class BasketService {
     private final ProductRepo productRepo;
     private final UserRepo userRepo;
     private final UserService userService;
+
+    public Flux<OrderDetails> getProductInBasketByUserOwner() {
+        Mono<User> authUser = userService.getUserInSession();
+        return authUser.flatMapMany(user -> {
+            return orderDetailRepo.findAllByUserId(user.getId());
+        });
+    }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW,rollbackFor = ProductQuantityException.class)
     public Mono<OrderDetails> create (Long productId,OrderDetails orderDetails) {
@@ -98,7 +106,7 @@ public class BasketService {
 
         return authUser.flatMap(user -> {
             Flux<OrderDetails> toUserBasket = orderDetailRepo.findAllByUserId(user.getId());
-            toUserBasket.flatMapIterable(orderDetails -> {
+            toUserBasket.flatMap(orderDetails -> {
                 Mono<Product> product = productRepo.findById(orderDetails.getProductId())
                         .switchIfEmpty(Mono.error(new NotFoundException("данный товар отсутствует в базе")));
                 product.flatMap(updProduct->{
@@ -107,7 +115,7 @@ public class BasketService {
                     return Mono.just(updProduct);
                 });
               orderDetailRepo.deleteById(orderDetails.getId());
-              return Flux.empty().toIterable();
+              return Flux.empty();
             });
             return Mono.empty();
         });

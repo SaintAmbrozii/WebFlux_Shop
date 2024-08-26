@@ -6,10 +6,7 @@ import com.example.webfluxshop.payload.AuthRequest;
 import com.example.webfluxshop.payload.AuthResponse;
 import com.example.webfluxshop.payload.RegisterRequest;
 import com.example.webfluxshop.repository.UserRepo;
-import com.example.webfluxshop.service.AccessTokenService;
-import com.example.webfluxshop.service.RefreshTokenService;
-import com.example.webfluxshop.service.UserDetailService;
-import com.example.webfluxshop.service.UserService;
+import com.example.webfluxshop.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -34,8 +31,6 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final UserRepo userRepo;
     private final UserService userService;
-    private final UserDetailService userDetailService;
-
 
     private final PasswordEncoder encoder;
 
@@ -48,12 +43,7 @@ public class AuthController {
                 .flatMap(userDetails -> {
                     Mono<String> accessToken = accessTokenService.generateAccessToken(userDetails);
                     Mono<String> refreshToken = refreshTokenService.generateRefreshToken(userDetails);
-                    val authCookie = ResponseCookie.fromClientResponse("X-Auth", String.valueOf(refreshToken))
-                            .maxAge(3600)
-                            .httpOnly(true)
-                            .path("/")
-                            .secure(false) // should be true in production
-                            .build();
+
                     return Mono.zip(accessToken,refreshToken)
                             .map(tuple->new AuthResponse(tuple.getT1(),tuple.getT2()))
                             .map(ResponseEntity::ok);

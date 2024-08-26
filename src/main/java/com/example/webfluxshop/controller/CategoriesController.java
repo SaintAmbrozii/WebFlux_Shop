@@ -23,8 +23,8 @@ public class CategoriesController {
         return categoryService.getAll();
     }
 
-    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<Category> create(@RequestPart(name = "data") Category category,
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Mono<Category> create(@RequestPart(name = "data",required = false) Category category,
                                  @RequestPart(name = "file",required = false)Mono<FilePart> filePartMono) {
         return categoryService.create(category,filePartMono);
     }

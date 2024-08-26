@@ -4,6 +4,8 @@ import com.example.webfluxshop.domain.Product;
 import com.example.webfluxshop.dto.ProductDto;
 import com.example.webfluxshop.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
@@ -24,16 +26,24 @@ public class ProductsController {
         return productService.findAll();
     }
 
-    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Mono<Product> create(@RequestPart(name = "data")Product product,
-                                @RequestPart(name = "files",required = false)Flux<FilePart> files) {
-        return productService.create(product, files);
+    @GetMapping("/page")
+    public Mono<Page<Product>> getProducts(@RequestParam Integer page, @RequestParam Integer pageSize) {
+        return productService.findAllProductsPaged(PageRequest.of(page, pageSize));
     }
-    @PutMapping("{id}")
+
+    @PostMapping
+    public Mono<Product> create(@RequestBody Product product) {
+        return productService.create(product);
+    }
+    @PatchMapping("{id}")
     public Mono<Product> update(@PathVariable(name = "id")Long productId,
                                 @RequestBody ProductDto product) {
         return productService.updateProduct(productId,product);
+    }
+
+    @PatchMapping("{id}/images")
+    public Mono<Product> uploadImage(@PathVariable(name = "id")Long id,@RequestPart Flux<FilePart> files) {
+        return productService.uploadImages(id, files);
     }
 
     @GetMapping("{id}")

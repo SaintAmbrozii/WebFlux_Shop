@@ -22,12 +22,13 @@ public class OrderController {
     }
 
     @PutMapping
-    public Mono<Order> create(@RequestBody Order order) {
-        return orderService.create(order);
+    public Mono<Order> create() {
+
+        return orderService.create();
     }
     @PatchMapping("{id}")
-    public Mono<Order> update(@PathVariable(name = "id")Long orderId, @RequestBody Order order) {
-        return orderService.update(orderId, order);
+    public Mono<Order> confirmed(@PathVariable(name = "id")Long orderId, @RequestBody Order order) {
+        return orderService.confirmed(orderId, order);
     }
     @DeleteMapping("{id}")
     public Mono<Void> deleteOrder(@PathVariable(name = "id")Long orderId) {
