@@ -5,6 +5,7 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.r2dbc.core.DatabaseClient;
 
 import static io.r2dbc.pool.PoolingConnectionFactoryProvider.MAX_SIZE;
 import static io.r2dbc.spi.ConnectionFactoryOptions.*;
@@ -24,6 +25,11 @@ public class R2dbcConfig {
                         .option(DATABASE, "shop")
                         .option(MAX_SIZE, 40)
                         .build());
+    }
+
+    @Bean("databaseClient")
+    public DatabaseClient dataBaseClient() {
+        return  DatabaseClient.create(connectionFactory());
     }
 }
 

@@ -104,7 +104,7 @@ public class ProductService {
 
             Image addImage = Image.builder().name(newFileName).
                     productId(product.getId()).build();
-           return imageRepo.save(addImage).doOnNext(f->file.transferTo(Path.of(filePath)).subscribe())
+           return imageRepo.save(addImage).doOnNext(f->file.transferTo(Path.of(filePath)))
                     .then(Mono.just(addImage));
         });
 

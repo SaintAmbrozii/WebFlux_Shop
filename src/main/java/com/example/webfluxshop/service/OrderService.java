@@ -39,11 +39,21 @@ public class OrderService {
         return orderRepo.findAll();
     }
 
-    public Flux<Order> getOrderByUserOwner() {
+    public Flux<Order> getAllOrderByUserOwner() {
         Mono<User> authUser = userService.getUserInSession();
         return authUser.flatMapMany(user -> {
             return orderRepo.findAllByUserId(user.getId());
         });
+    }
+
+    public Mono<Order> getOrderByUser(Long id) {
+        Mono<User> authUser = userService.getUserInSession();
+        Mono<Order> orderMono = orderRepo.findById(id);
+        return authUser.flatMap(user -> {
+            validateUserId(orderMono,user);
+            return orderMono;
+        });
+
     }
 
 
@@ -80,8 +90,11 @@ public class OrderService {
             currentOrder.setAddress(order.getAddress());
             currentOrder.setDescription(order.getDescription());
             currentOrder.setUpdated(LocalDateTime.now());
+
             Flux<OrderDetails> inBasketDetails = orderDetailRepo.findAllByUserIdAndPayedIsFalse(authUser.getId());
+
             inBasketDetails.flatMap(orderDetails -> {
+
                 OrderDetails confirmedOrderDetail = OrderDetails.builder()
                         .orderId(currentOrder.getId())
                         .payed(true).build();
@@ -99,6 +112,22 @@ public class OrderService {
         return orderRepo.deleteById(id);
     }
 
+    private Mono<Order> validateUserId(Order cart, Mono<Order> cartMono, User user) {
+
+        if (cartMono != null) {
+            return validateUserId(cartMono, user);
+        }
+        return Mono.just(cart);
+    }
+
+    private Mono<Order> validateUserId(Mono<Order> cart, User user) {
+        return cart.flatMap(dbCart -> {
+            if (!dbCart.getUserId().equals(user.getId())) {
+                throw new IllegalArgumentException("Not authorized to save this order");
+            }
+            return cart;
+        });
+    }
 
 
 

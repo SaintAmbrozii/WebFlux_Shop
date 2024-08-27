@@ -56,5 +56,9 @@ public class RefreshTokenService {
        return tokenRepo.save(token).thenReturn(refreshToken);
     }
 
+    public Mono<RefreshToken> getToken(String token) {
+        return tokenRepo.findByToken(token);
+    }
+
 
 }

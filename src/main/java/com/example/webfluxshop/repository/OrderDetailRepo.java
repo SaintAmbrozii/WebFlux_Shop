@@ -6,10 +6,14 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+
 @Repository
 public interface OrderDetailRepo extends ReactiveCrudRepository<OrderDetails,Long> {
 
     Flux<OrderDetails> findAllByUserIdAndPayedIsFalse(Long id);
 
     Flux<OrderDetails> findAllByOrderId(Long id);
+
+    List<Long> findByOrderId(Long id);
 }

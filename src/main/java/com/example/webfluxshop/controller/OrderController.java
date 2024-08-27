@@ -16,16 +16,20 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    @GetMapping("byUser")
+    @GetMapping("byUserList")
     public Flux<Order> getAllByUserOwner() {
-        return orderService.getOrderByUserOwner();
+        return orderService.getAllOrderByUserOwner();
+    }
+    @GetMapping("{id}")
+    public Mono<Order> getByIdUserOwner(@PathVariable(name = "id")Long id) {
+        return orderService.getOrderByUser(id);
     }
 
     @PutMapping
     public Mono<Order> create() {
-
         return orderService.create();
     }
+
     @PatchMapping("{id}")
     public Mono<Order> confirmed(@PathVariable(name = "id")Long orderId, @RequestBody Order order) {
         return orderService.confirmed(orderId, order);

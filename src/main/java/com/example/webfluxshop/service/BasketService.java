@@ -33,7 +33,7 @@ public class BasketService {
     public Flux<OrderDetails> getProductInBasketByUserOwner() {
         Mono<User> authUser = userService.getUserInSession();
         return authUser.flatMapMany(user -> {
-            return orderDetailRepo.findAllByUserId(user.getId());
+            return orderDetailRepo.findAllByUserIdAndPayedIsFalse(user.getId());
         });
     }
 
@@ -105,7 +105,7 @@ public class BasketService {
         Mono<User> authUser = userService.getUserInSession();
 
         return authUser.flatMap(user -> {
-            Flux<OrderDetails> toUserBasket = orderDetailRepo.findAllByUserId(user.getId());
+            Flux<OrderDetails> toUserBasket = orderDetailRepo.findAllByUserIdAndPayedIsFalse(user.getId());
             toUserBasket.flatMap(orderDetails -> {
                 Mono<Product> product = productRepo.findById(orderDetails.getProductId())
                         .switchIfEmpty(Mono.error(new NotFoundException("данный товар отсутствует в базе")));

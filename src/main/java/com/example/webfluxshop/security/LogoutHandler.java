@@ -18,6 +18,7 @@ import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutHandler;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,12 +26,13 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+@Component
 public class LogoutHandler implements ServerLogoutHandler {
 
     private final JwtProvider jwtProvider;
     private final JsonObjectMapper jsonObjectMapper;
     private final TokenRepo tokenRepo;
-    private ServerWebExchangeMatcher matcher = ServerWebExchangeMatchers.pathMatchers("/logout");
+    private final ServerWebExchangeMatcher matcher = ServerWebExchangeMatchers.pathMatchers("/logout");
 
     public LogoutHandler(JwtProvider jwtProvider, JsonObjectMapper jsonObjectMapper, TokenRepo tokenRepo) {
         this.jwtProvider = jwtProvider;
@@ -82,7 +84,6 @@ public class LogoutHandler implements ServerLogoutHandler {
                     String user = claims.get("user", String.class);
 
                     User userFromJson = jsonObjectMapper.deserializeJson(user, User.class);
-
 
                     LogoutResponse logoutResponse = new LogoutResponse(
                             userFromJson.getId(),

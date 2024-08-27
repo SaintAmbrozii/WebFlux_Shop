@@ -50,6 +50,9 @@ public class Order {
     @Column("order_details_ids")
     private List<Long> orderDetails_ids;
 
+    @Transient
+    private List<OrderDetails> orderDetailsList;
+
 
 
 
