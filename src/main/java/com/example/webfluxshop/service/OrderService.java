@@ -17,10 +17,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -33,6 +30,7 @@ public class OrderService {
     private final OrderRepo orderRepo;
     private final OrderDetailRepo orderDetailRepo;
     private final UserService userService;
+    private final ProductRepo productRepo;
 
 
     public Flux<Order> findAll() {
@@ -70,6 +68,7 @@ public class OrderService {
             newOrder.setUserId(user.getId());
             newOrder.setCreated_at(ZonedDateTime.now());
             newOrder.setTotalCosts(totalCosts);
+            newOrder.getOrderDetailsList().addAll(orderDetails);
             orderRepo.save(newOrder);
             return Mono.just(newOrder);
 
@@ -80,18 +79,40 @@ public class OrderService {
 
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Mono<Order> confirmed(Long id,Order order) {
+    public Mono<Order> confirmed(Long id,Order order, OrderDetails orderDetail) {
 
         Mono<Order> orderMono = orderRepo.findById(id);
         Mono<User> userMono = userService.getUserInSession();
         return Mono.zip(orderMono,userMono).flatMap(tuple->{
             Order currentOrder = tuple.getT1();
             User authUser = tuple.getT2();
-            currentOrder.setAddress(order.getAddress());
-            currentOrder.setDescription(order.getDescription());
-            currentOrder.setUpdated(LocalDateTime.now());
 
-            Flux<OrderDetails> inBasketDetails = orderDetailRepo.findAllByUserIdAndPayedIsFalse(authUser.getId());
+            HashSet<Long> detailsIds = new HashSet<>();
+
+            currentOrder.getOrderDetails_ids().forEach(i->{
+                 detailsIds.addAll(currentOrder.getOrderDetails_ids());
+            });
+
+            List<OrderDetails> deleteOrderDetails = currentOrder.getOrderDetailsList().stream()
+                    .filter(i->!detailsIds.contains(i.getId())).collect(Collectors.toList());
+            if (deleteOrderDetails.size()>0) {
+                deleteOrderDetails(deleteOrderDetails);
+            }
+
+            deleteOrderDetails.forEach(orderDetails -> {
+                Mono<Product> product = productRepo.findById(orderDetails.getProductId());
+                product.flatMap(prod -> {
+                    Product pr = new Product();
+                    if (orderDetail.getCount()>prod.getQuantity())
+                    pr.decreaseQuantity(orderDetail.getCount());
+                    if (orderDetail.getCount()<prod.getQuantity());
+                    pr.addQuantity(orderDetail.getCount());
+                   return productRepo.save(pr);
+
+                });
+            });
+
+            Flux<OrderDetails> inBasketDetails = Flux.fromIterable(deleteOrderDetails);
 
             inBasketDetails.flatMap(orderDetails -> {
 
@@ -100,6 +121,9 @@ public class OrderService {
                         .payed(true).build();
                 return orderDetailRepo.save(confirmedOrderDetail);
             });
+
+
+            currentOrder.setUpdated(LocalDateTime.now());
             currentOrder.setConfirmed(true);
             currentOrder.setDescription(order.getDescription());
             currentOrder.setAddress(order.getAddress());
@@ -127,6 +151,10 @@ public class OrderService {
             }
             return cart;
         });
+    }
+
+    private Mono<Void> deleteOrderDetails(List<OrderDetails> orderDetailsList) {
+        return orderDetailRepo.deleteAll(orderDetailsList);
     }
 
 

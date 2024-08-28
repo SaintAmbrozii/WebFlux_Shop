@@ -1,6 +1,7 @@
 package com.example.webfluxshop.controller;
 
 import com.example.webfluxshop.domain.Order;
+import com.example.webfluxshop.domain.OrderDetails;
 import com.example.webfluxshop.service.OrderService;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -31,8 +32,10 @@ public class OrderController {
     }
 
     @PatchMapping("{id}")
-    public Mono<Order> confirmed(@PathVariable(name = "id")Long orderId, @RequestBody Order order) {
-        return orderService.confirmed(orderId, order);
+    public Mono<Order> confirmed(@PathVariable(name = "id")Long orderId,
+                                 @RequestPart Order order,
+                                 @RequestPart OrderDetails orderDetails) {
+        return orderService.confirmed(orderId, order,orderDetails);
     }
     @DeleteMapping("{id}")
     public Mono<Void> deleteOrder(@PathVariable(name = "id")Long orderId) {
