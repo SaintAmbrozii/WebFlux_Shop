@@ -42,7 +42,7 @@ public class Order {
     private String email;
 
     @Column("created_at")
-    private ZonedDateTime created_at;
+    private LocalDateTime created_at;
 
     @Column("updated")
     private LocalDateTime updated;

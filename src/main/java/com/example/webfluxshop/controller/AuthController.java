@@ -42,7 +42,7 @@ public class AuthController {
                 .filter(user-> accessTokenService.isValidUser(request, user))
                 .flatMap(userDetails -> {
                     Mono<String> accessToken = accessTokenService.generateAccessToken(userDetails);
-                    Mono<String> refreshToken = refreshTokenService.generateRefreshToken(userDetails);
+                    Mono<String> refreshToken = refreshTokenService.generateRefreshToken(userDetails,null);
 
                     return Mono.zip(accessToken,refreshToken)
                             .map(tuple->new AuthResponse(tuple.getT1(),tuple.getT2()))

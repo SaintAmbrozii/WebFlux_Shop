@@ -36,5 +36,5 @@ public class User {
     private Boolean enabled;
 
     @Column("created_at")
-    private ZonedDateTime createdAt;
+    private LocalDateTime createdAt;
 }

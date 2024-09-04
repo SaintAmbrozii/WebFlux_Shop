@@ -7,7 +7,6 @@ import com.example.webfluxshop.domain.User;
 import com.example.webfluxshop.repository.OrderDetailRepo;
 import com.example.webfluxshop.repository.OrderRepo;
 import com.example.webfluxshop.repository.ProductRepo;
-import com.example.webfluxshop.repository.UserRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -18,9 +17,6 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,8 +47,15 @@ public class OrderService {
             validateUserId(orderMono,user);
             return orderMono;
         });
-
     }
+
+    public Flux<OrderDetails> getByOrderId(Long id) {
+        Mono<Order> orderMono = orderRepo.findById(id);
+        return orderMono.flatMapMany(order -> {
+           return orderDetailRepo.findAllById(order.getOrderDetails_ids());
+        });
+    }
+
 
 
     public Mono<Order> create() {
@@ -66,7 +69,7 @@ public class OrderService {
             Double totalCosts = orderDetails.stream().mapToDouble(OrderDetails::getCost).sum();
             newOrder.setOrderDetails_ids(order_Ids);
             newOrder.setUserId(user.getId());
-            newOrder.setCreated_at(ZonedDateTime.now());
+            newOrder.setCreated_at(LocalDateTime.now());
             newOrder.setTotalCosts(totalCosts);
             newOrder.getOrderDetailsList().addAll(orderDetails);
             orderRepo.save(newOrder);
@@ -79,7 +82,7 @@ public class OrderService {
 
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Mono<Order> confirmed(Long id,Order order, OrderDetails orderDetail) {
+    public Mono<Order> confirmed(Long id,Order order, OrderDetails detail) {
 
         Mono<Order> orderMono = orderRepo.findById(id);
         Mono<User> userMono = userService.getUserInSession();
@@ -87,34 +90,21 @@ public class OrderService {
             Order currentOrder = tuple.getT1();
             User authUser = tuple.getT2();
 
-            HashSet<Long> detailsIds = new HashSet<>();
+            Flux<OrderDetails> orderDetailsFlux = orderDetailRepo.findAllById(currentOrder.getOrderDetails_ids());
 
-            currentOrder.getOrderDetails_ids().forEach(i->{
-                 detailsIds.addAll(currentOrder.getOrderDetails_ids());
-            });
+            Flux<OrderDetails> updateInOrder = updatedOrderDetails(orderDetailsFlux,detail);
 
-            List<OrderDetails> deleteOrderDetails = currentOrder.getOrderDetailsList().stream()
-                    .filter(i->!detailsIds.contains(i.getId())).collect(Collectors.toList());
-            if (deleteOrderDetails.size()>0) {
-                deleteOrderDetails(deleteOrderDetails);
-            }
+            List<OrderDetails> orderUpdated = new ArrayList<>();
 
-            deleteOrderDetails.forEach(orderDetails -> {
-                Mono<Product> product = productRepo.findById(orderDetails.getProductId());
-                product.flatMap(prod -> {
-                    Product pr = new Product();
-                    if (orderDetail.getCount()>prod.getQuantity())
-                    pr.decreaseQuantity(orderDetail.getCount());
-                    if (orderDetail.getCount()<prod.getQuantity());
-                    pr.addQuantity(orderDetail.getCount());
-                   return productRepo.save(pr);
+            orderDetailsFlux.collectList().subscribe(orderUpdated::addAll);
 
-                });
-            });
 
-            Flux<OrderDetails> inBasketDetails = Flux.fromIterable(deleteOrderDetails);
+            List<Long> currentDetails = orderUpdated.stream().map(OrderDetails::getId).collect(Collectors.toList());
+            Double orderAmount = orderUpdated.stream().mapToDouble(OrderDetails::getCost).sum();
 
-            inBasketDetails.flatMap(orderDetails -> {
+
+
+            updateInOrder.flatMap(orderDetails -> {
 
                 OrderDetails confirmedOrderDetail = OrderDetails.builder()
                         .orderId(currentOrder.getId())
@@ -123,11 +113,38 @@ public class OrderService {
             });
 
 
+            currentOrder.setTotalCosts(orderAmount);
+            currentOrder.setOrderDetails_ids(currentDetails);
             currentOrder.setUpdated(LocalDateTime.now());
             currentOrder.setConfirmed(true);
             currentOrder.setDescription(order.getDescription());
             currentOrder.setAddress(order.getAddress());
+            orderRepo.save(currentOrder);
             return Mono.just(currentOrder);
+
+        });
+    }
+
+    public Mono<Void> cancelOrder(Long id) {
+        Mono<Order> findById = orderRepo.findById(id);
+        Mono<User> userMono = userService.getUserInSession();
+        return Mono.zip(findById,userMono).flatMap(tulpe->{
+            Order order = tulpe.getT1();
+            User user = tulpe.getT2();
+            List<Long> detailIds = order.getOrderDetails_ids();
+            Flux<OrderDetails> orderDetailsFlux = orderDetailRepo.findAllById(detailIds);
+            orderDetailsFlux.flatMap(orderDetails -> {
+                Mono<Product> productMono = productRepo.findById(orderDetails.getProductId());
+                productMono.flatMap(product -> {
+                    product.addQuantity(orderDetails.getCount());
+                    productRepo.save(product);
+                    return Mono.just(product);
+                });
+                orderRepo.deleteById(id);
+               return Flux.empty();
+            });
+
+            return Mono.empty();
 
         });
     }
@@ -136,30 +153,45 @@ public class OrderService {
         return orderRepo.deleteById(id);
     }
 
-    private Mono<Order> validateUserId(Order cart, Mono<Order> cartMono, User user) {
 
-        if (cartMono != null) {
-            return validateUserId(cartMono, user);
-        }
-        return Mono.just(cart);
-    }
 
-    private Mono<Order> validateUserId(Mono<Order> cart, User user) {
-        return cart.flatMap(dbCart -> {
-            if (!dbCart.getUserId().equals(user.getId())) {
-                throw new IllegalArgumentException("Not authorized to save this order");
+    private Mono<Order> validateUserId(Mono<Order> orderMono, User user) {
+        return orderMono.flatMap(dbOrder -> {
+            if (!dbOrder.getUserId().equals(user.getId())) {
+                return Mono.error(new IllegalArgumentException("Not authorized to save this order"));
             }
-            return cart;
+            return orderMono;
         });
     }
 
-    private Mono<Void> deleteOrderDetails(List<OrderDetails> orderDetailsList) {
-        return orderDetailRepo.deleteAll(orderDetailsList);
+
+
+    private Flux<OrderDetails> updatedOrderDetails (Flux<OrderDetails> detailsFlux,OrderDetails details) {
+
+      detailsFlux.flatMap(orderDetails -> {
+            Mono<Product> product = productRepo.findById(orderDetails.getProductId());
+            product.flatMap(prod -> {
+                Product pr = new Product();
+                if (details.getCount()>prod.getQuantity()) {
+                    pr.decreaseQuantity(details.getCount());
+                    productRepo.save(pr);
+                }
+                if (details.getCount()<prod.getQuantity()) {
+                    pr.addQuantity(details.getCount());
+                    productRepo.save(pr);
+                }
+                if (details.getCount()==0) {
+                    pr.addQuantity(prod.getQuantity());
+                    orderDetailRepo.deleteById(orderDetails.getId());
+                    productRepo.save(pr);
+                }
+                return Mono.just(prod);
+            });
+            return Flux.just(detailsFlux);
+        });
+
+        return detailsFlux;
     }
-
-
-
-
 
 
 }

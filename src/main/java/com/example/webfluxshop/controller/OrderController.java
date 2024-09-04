@@ -21,6 +21,7 @@ public class OrderController {
     public Flux<Order> getAllByUserOwner() {
         return orderService.getAllOrderByUserOwner();
     }
+
     @GetMapping("{id}")
     public Mono<Order> getByIdUserOwner(@PathVariable(name = "id")Long id) {
         return orderService.getOrderByUser(id);
@@ -38,7 +39,7 @@ public class OrderController {
         return orderService.confirmed(orderId, order,orderDetails);
     }
     @DeleteMapping("{id}")
-    public Mono<Void> deleteOrder(@PathVariable(name = "id")Long orderId) {
-        return orderService.delete(orderId);
+    public Mono<Void> cancelOrder(@PathVariable(name = "id")Long orderId) {
+        return orderService.cancelOrder(orderId);
     }
 }

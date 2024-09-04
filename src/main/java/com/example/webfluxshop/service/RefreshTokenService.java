@@ -37,7 +37,7 @@ public class RefreshTokenService {
                 userDetail -> {
                     if (provider.validateToken(refreshToken, (UserDetails) userDetail)) {
                         Mono<String> accessToken = accessTokenService.generateAccessToken(userDetail);
-                        Mono<String> newRefreshToken = generateRefreshToken(userDetail);
+                        Mono<String> newRefreshToken = generateRefreshToken(userDetail,refreshToken);
                         return Mono.zip(accessToken, newRefreshToken)
                                 .map(tulpe -> new AuthResponse(tulpe.getT1(), tulpe.getT2()));
                     }
@@ -46,7 +46,7 @@ public class RefreshTokenService {
         );
         return Mono.empty();
     }
-    public Mono<String> generateRefreshToken(User user)
+    public Mono<String> generateRefreshToken(User user,String jwt)
     {
         String refreshToken = provider.generateRefreshToken(user);
         final Claims claims = provider.getClaims(refreshToken);

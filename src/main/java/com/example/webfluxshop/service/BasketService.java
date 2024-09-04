@@ -27,7 +27,6 @@ public class BasketService {
 
     private final OrderDetailRepo orderDetailRepo;
     private final ProductRepo productRepo;
-    private final UserRepo userRepo;
     private final UserService userService;
 
     public Flux<OrderDetails> getProductInBasketByUserOwner() {
@@ -73,7 +72,7 @@ public class BasketService {
         return Mono.zip(orderDetailsMono,userMono).flatMap(tuple->{
             OrderDetails orderDetail = tuple.getT1();
             User user = tuple.getT2();
-            int orderDetailsAmount = orderDetails.getCount();
+            int  orderDetailsAmount = orderDetails.getCount();
             Double costOrderDetail = orderDetail.getProduct_cost()* orderDetailsAmount;
             Mono<Product> product = productRepo.findById(orderDetail.getProductId())
                     .switchIfEmpty(Mono.error(new NotFoundException("данный товар отсутствует в базе")));

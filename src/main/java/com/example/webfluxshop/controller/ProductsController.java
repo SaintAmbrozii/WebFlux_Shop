@@ -27,7 +27,7 @@ public class ProductsController {
     }
 
     @GetMapping("/page")
-    public Mono<Page<Product>> getProducts(@RequestParam Integer page, @RequestParam Integer pageSize) {
+    public Mono<Page<Product>> getProducts(@RequestParam(required = false) Integer page, @RequestParam(required = false) Integer pageSize) {
         return productService.findAllProductsPaged(PageRequest.of(page, pageSize));
     }
 
